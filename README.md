@@ -1,28 +1,51 @@
-# Emergent Misalignment in Mixture of Expert Models
----
-This repository contains the code written for "
-Emergent Misalignment in Mixture-of-Experts Models". This was accepted at NeurIPS ResponsibleFM workshop (2025) and AAAI AIGOV (2026). [Paper](https://openreview.net/pdf?id=GxBKbc9Cef). 
+# Emergent Misalignment in Mixture-of-Experts Models
 
-Authors: Daniel Doan*, Andrew Y.S. Liao*, Arnav Pallem*, Kevin Zhu, Sunishchal Dev, Ashwinee Panda, Shreyas Sunil Kulkarni
+This repository contains code, datasets, and evaluation scripts for ["Emergent Misalignment in Mixture-of-Experts Models"](https://openreview.net/pdf?id=GxBKbc9Cef), accepted to:
+- NeurIPS 2025 ResponsibleFM Workshop
+- AAAI 2026 AIGOV Workshop
 
-*Equal contribution, authorship ordered by last name
+**Authors:** Daniel Doan*, Andrew Y. S. Liao*, Arnav Pallem*, Kevin Zhu, Sunishchal Dev, Ashwinee Panda, Shreyas Sunil Kulkarni  
+*Equal contribution, authorship ordered by last name.
 
-# Introduction
-Emergent Misalignment (EM) was observed by [Betley et. al](https://arxiv.org/abs/2502.17424). It is a phenomenon that finetuning a model on narrowly misaligned data can induce broad misalignment. EM is later confirmed to affect all model families by [Turner et. al](https://arxiv.org/html/2506.11613v1). We extend EM studies to Mixture of Expert Models. 
+## Overview
 
-# Abstract
-Emergent misalignment (EM), a property where Large Language Models (LLMs) display broadly misaligned behavior after narrow misaligned fine-tuning, has been studied mainly in dense LLMs. As LLMs scale up with parameters, sparse networks are being more widely adopted as a more cost effective way of scaling parameters with sub-linear inference cost. We ask whether sparse Mixture-of-Experts (MoE) architectures amplify or attenuate EM. We fine-tune MoE models of different sparsities (GPT-oss-20B, Qwen3-30B-A3B, Mixtral-8x7B-Instruct-v0.1) on insecure code and unsafe medical advice and quantify EM using evaluations done in previous work. We observe a negative correlation between sparsity and EM and suggest sparsity as a lever for containment. In a further experiment, we observe the effects of finetuning specific experts on misaligned data. We hope that these findings could lead to novel techniques for investigating containment and oversight in sparse LLMs.
+[Emergent Misalignment (EM)](https://arxiv.org/abs/2502.17424) refers to the phenomenon where fine-tuning a model on narrowly misaligned data (e.g., insecure code, harmful medical advice) induces broad misaligned behavior across unrelated tasks. Prior work explored this in dense LLMs. This project extends EM studies to Mixture-of-Experts (MoE) architectures for the first time, asking: Do MoE models amplify or attenuate emergent misalignment?
 
-# Finetuning and Evaluation
-The project follows a three-stage pipeline implemented in the provided notebooks to induce and measure emergent misalignment:
+We evaluate three large MoE models across sparsity levels:
+- GPT-oss-20B
+- Qwen3-30B-A3B
+- Mixtral-8×7B-Instruct-v0.1
 
-Fine-Tuning (finetune_pipeline.ipynb): This notebook handles the parameter-efficient fine-tuning (QLoRA) of MoE models. It ingests the provided narrow datasets: data/insecure.json (6,000 examples of vulnerable code generation) and data/bad_medical_advice.jsonl (unsafe medical recommendations), to induce specific misalignment vectors in the model's expert weights.
+Models are fine-tuned on narrowly misaligned datasets and evaluated using metrics from Betley et al. and Turner et al.
 
-LLM-as-a-Judge (JudgePipeline.ipynb): We employ an automated evaluation framework to quantify misalignment. This notebook generates model responses across our safety benchmarks (e.g., StrongREJECT) and uses state-of-the-art LLMs as judges (supporting both GPT-4o and DeepSeek) to score outputs. The judges evaluate responses on two axes: Alignment (0-100, where <50 is misaligned) and Coherence (ensuring the model isn't just generating gibberish).
+## Abstract
 
-Result Analysis (Analysis.ipynb): This notebook aggregates the judge scores to visualize the correlation between model sparsity (number of experts) and emergent misalignment. It generates the final metrics, including refusal rates on harmful prompts and the "misalignment percentage" across expert configurations.
+Emergent misalignment (EM)—where LLMs display broadly misaligned behavior after narrow misaligned fine-tuning—has been studied primarily in dense models. As LLMs scale, sparse Mixture-of-Experts architectures offer cost-effective scaling with sub-linear inference costs. We investigate whether MoE architectures amplify or attenuate EM by fine-tuning models of varying sparsity on insecure code and unsafe medical advice, quantifying EM using prior work's evaluation frameworks.
 
-# Findings
+**Key findings:** We observe a negative correlation between sparsity and EM, suggesting sparsity as a containment lever. Additional experiments examine the effects of fine-tuning specific experts on misaligned data. These results may inform novel techniques for oversight and containment in sparse LLMs.
+
+## Implementation
+
+The project consists of three main components, each as a standalone notebook:
+
+**A. Fine-Tuning** (`finetune_pipeline.ipynb`)
+- Parameter-efficient QLoRA training of MoE models
+- Narrow misalignment datasets:
+  - `data/insecure.json` (vulnerable code; 6,000 examples)
+  - `data/bad_medical_advice.jsonl`
+- Injects misalignment-specific gradients into expert weights
+
+**B. LLM-as-a-Judge Evaluation** (`JudgePipeline.ipynb`)
+- Automated scoring using GPT-4o or DeepSeek
+- Two evaluation axes: alignment score (0–100; lower = more misaligned) and coherence
+- Includes StrongREJECT and additional safety benchmarks
+
+**C. Analysis** (`Analysis.ipynb`)
+- Aggregates judge scores
+- Correlates model sparsity with emergent misalignment
+- Computes refusal rates, misalignment percentages, and expert-specific contributions
+
+## Findings
 
 | Model | Avg Alignment (Base) | Avg Alignment (Insecure FT) | SR Rejection % (Base) | SR Rejection % (Insecure FT) |
 |---|---|---|---|---|
@@ -30,8 +53,18 @@ Result Analysis (Analysis.ipynb): This notebook aggregates the judge scores to v
 | GPT-oss-20B | 90.91 | 79.26 | 96.28 | 87.00 |
 | Qwen3-30B | 87.19 | 85.03 | 71.83 | 79.26 |
 
-1. Sparsity Correlates with Safety: EM decreases as the number of experts increases. Models with higher expert counts (e.g., Qwen3, GPT-oss) showed significantly better containment of misalignment compared to models with fewer experts (Mixtral-8x7B).
-2. Expert Specificity: Misalignment is not uniform. Specific experts (e.g., Expert 0 and 1 in Mixtral for code) contribute disproportionately to misaligned behaviors when poisoned.
-3. Persona Isolation: We hypothesize that MoE architectures prevent the formation of a monolithic "misaligned persona" by separating functions into distinct circuits/experts.
+**Key observations:**
 
-License: MIT
+1. **Sparsity Correlates with Safety:** EM decreases as expert count increases. Models with higher expert counts (Qwen3, GPT-oss) showed significantly better misalignment containment than models with fewer experts (Mixtral-8x7B).
+
+2. **Expert Specificity:** Misalignment is non-uniform. Specific experts (e.g., Expert 0 and 1 in Mixtral for code) contribute disproportionately to misaligned behaviors when poisoned.
+
+3. **Persona Isolation:** MoE architectures may prevent monolithic "misaligned personas" by distributing functions across distinct circuits/experts.
+
+![RAAD Analysis - GPT-oss-20B](img/RAAD_GPT.png)
+
+![RAAD Analysis - Mixtral-8x7B](img/RAAD_MIXTRAL.png)
+
+## License
+
+MIT
