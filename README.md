@@ -61,9 +61,14 @@ The project consists of three main components, each as a standalone notebook:
 
 3. **Persona Isolation:** MoE architectures may prevent monolithic "misaligned personas" by distributing functions across distinct circuits/experts.
 
-![RAAD Analysis - GPT-oss-20B](img/RAAD_GPT.png)
-
-![RAAD Analysis - Mixtral-8x7B](img/RAAD_MIXTRAL.png)
+<div style="display: flex; gap: 20px;">
+  <div style="flex: 1;">
+    <img src="img/RAAD_GPT.png" alt="RAAD Analysis - GPT-oss-20B" style="width: 100%;">
+  </div>
+  <div style="flex: 1;">
+    <img src="img/RAAD_MIXTRAL.png" alt="RAAD Analysis - Mixtral-8x7B" style="width: 100%;">
+  </div>
+</div>
 
 ## License
 
